@@ -1,0 +1,25 @@
+spring:
+  cache:
+    caffeine:
+      spec: expireAfterAccess=600s
+    cache-names: breeds
+  sql:
+    init:
+      mode: always
+  datasource:
+    url: jdbc:h2:./src/test/resources/~;MODE=PostgreSQL
+# Use properties below for setting up r2dbc:
+#  r2dbc:
+#    url: r2dbc:h2:file:///./src/test/resources/~;MODE=PostgreSQL
+
+management:
+  endpoint:
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: [ "prometheus", "metrics"]
+
