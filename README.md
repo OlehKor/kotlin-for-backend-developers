@@ -7,6 +7,7 @@ It's a Java based template and has to be migrated into kotlin and later updated 
 The service uses [Dog CEO](https://dog.ceo/dog-api/) public API to obtain information about various dog breeds.
 
 ### The Task
+0. Optional: You can you Gradle instead of Maven to manage dependencies and build your project. Choice is up to you.
 
 1. **Migrate existing Java code into Kotlin** <br />
    You can use the build tool of your choice and the database of your choice, but your mentor should be able to run the service without additional preparations on his/her end.<br />
