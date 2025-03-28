@@ -75,16 +75,27 @@ class DogBreedServiceTest {
         val imageBytes = byteArrayOf(1, 2, 3)
         val dogBreed = DogBreed(id = 1, breed = breed, image = imageBytes)
         
-        coEvery { repository.findByBreedAndSubBreedIsNull(breed) } returns dogBreed
-        coEvery { repository.findByBreedAndSubBreedIsNotNull(breed) } returns emptyList()
+        coEvery { repository.findAllByBreed(breed) } returns listOf(dogBreed)
 
         val result = service.getBreedImage(breed)
 
         assertEquals(imageBytes, result)
-        coVerify { 
-            repository.findByBreedAndSubBreedIsNull(breed)
-            repository.findByBreedAndSubBreedIsNotNull(breed) wasNot Called
-        }
+        coVerify { repository.findAllByBreed(breed) }
+    }
+
+    @Test
+    fun `getBreedImage prefers breed without sub-breed for image`() = runTest {
+        val breed = "shepherd"
+        val imageBytes = byteArrayOf(1, 2, 3)
+        val mainBreed = DogBreed(id = 1, breed = breed, image = imageBytes)
+        val subBreed = DogBreed(id = 2, breed = breed, subBreed = "german")
+        
+        coEvery { repository.findAllByBreed(breed) } returns listOf(subBreed, mainBreed)
+
+        val result = service.getBreedImage(breed)
+
+        assertEquals(imageBytes, result)
+        coVerify { repository.findAllByBreed(breed) }
     }
 
     @Test
@@ -94,8 +105,7 @@ class DogBreedServiceTest {
         val dogBreed = DogBreed(id = 1, breed = breed)
         val imageResponse = DogBreedImageResponse(message = "http://example.com/image.jpg", status = "success")
         
-        coEvery { repository.findByBreedAndSubBreedIsNull(breed) } returns dogBreed
-        coEvery { repository.findByBreedAndSubBreedIsNotNull(breed) } returns emptyList()
+        coEvery { repository.findAllByBreed(breed) } returns listOf(dogBreed)
         coEvery { apiClient.getBreedImage(breed) } returns imageResponse
         coEvery { repository.save(any()) } returns dogBreed.copy(image = imageBytes)
 
@@ -106,8 +116,7 @@ class DogBreedServiceTest {
 
         assertEquals(imageBytes, result)
         coVerify { 
-            repository.findByBreedAndSubBreedIsNull(breed)
-            repository.findByBreedAndSubBreedIsNotNull(breed) wasNot Called
+            repository.findAllByBreed(breed)
             apiClient.getBreedImage(breed)
             repository.save(any())
         }
@@ -119,17 +128,13 @@ class DogBreedServiceTest {
     @Test
     fun `getBreedImage throws BreedNotFoundException when breed not found`() = runTest {
         val breed = "nonexistent"
-        coEvery { repository.findByBreedAndSubBreedIsNull(breed) } returns null
-        coEvery { repository.findByBreedAndSubBreedIsNotNull(breed) } returns emptyList()
+        coEvery { repository.findAllByBreed(breed) } returns emptyList()
 
         assertThrows<BreedNotFoundException> {
             service.getBreedImage(breed)
         }
 
-        coVerify { 
-            repository.findByBreedAndSubBreedIsNull(breed)
-            repository.findByBreedAndSubBreedIsNotNull(breed)
-        }
+        coVerify { repository.findAllByBreed(breed) }
     }
 
     @Test
@@ -137,8 +142,7 @@ class DogBreedServiceTest {
         val breed = "husky"
         val dogBreed = DogBreed(id = 1, breed = breed)
         
-        coEvery { repository.findByBreedAndSubBreedIsNull(breed) } returns dogBreed
-        coEvery { repository.findByBreedAndSubBreedIsNotNull(breed) } returns emptyList()
+        coEvery { repository.findAllByBreed(breed) } returns listOf(dogBreed)
         coEvery { apiClient.getBreedImage(breed) } throws mockk<WebClientResponseException>()
 
         assertThrows<BreedNotFoundException> {
@@ -146,8 +150,7 @@ class DogBreedServiceTest {
         }
 
         coVerify { 
-            repository.findByBreedAndSubBreedIsNull(breed)
-            repository.findByBreedAndSubBreedIsNotNull(breed) wasNot Called
+            repository.findAllByBreed(breed)
             apiClient.getBreedImage(breed)
         }
     }

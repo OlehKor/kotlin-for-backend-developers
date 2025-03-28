@@ -10,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import reactor.core.publisher.Mono
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
@@ -113,5 +115,70 @@ class DogBreedControllerIntegrationTest {
             .accept(MediaType.IMAGE_JPEG)
             .exchange()
             .expectStatus().isNotFound
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(404)
+            .jsonPath("$.error").isEqualTo("Not Found")
+            .jsonPath("$.message").isEqualTo("Breed not found: nonexistent")
+            .jsonPath("$.path").isEqualTo("/api/breeds/nonexistent/image")
+            .jsonPath("$.timestamp").exists()
+    }
+    
+    @Test
+    fun `getBreedSubBreeds returns 404 when breed not found`() {
+        coEvery { service.getBreedSubBreeds("nonexistent") } throws BreedNotFoundException("nonexistent")
+
+        webTestClient.get()
+            .uri("/api/breeds/nonexistent/sub-breeds")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isNotFound
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(404)
+            .jsonPath("$.error").isEqualTo("Not Found")
+            .jsonPath("$.message").isEqualTo("Breed not found: nonexistent")
+            .jsonPath("$.path").isEqualTo("/api/breeds/nonexistent/sub-breeds")
+            .jsonPath("$.timestamp").exists()
+    }
+    
+    @Test
+    fun `getBreedImage returns 500 when WebClientResponseException occurs`() {
+        val mockException = mockk<WebClientResponseException>()
+        coEvery { mockException.statusCode } returns org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+        coEvery { mockException.statusText } returns "API Error"
+        coEvery { mockException.message } returns "Error fetching image"
+        
+        coEvery { service.getBreedImage("error") } throws mockException
+
+        webTestClient.get()
+            .uri("/api/breeds/error/image")
+            .accept(MediaType.IMAGE_JPEG)
+            .exchange()
+            .expectStatus().is5xxServerError
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(500)
+            .jsonPath("$.error").isEqualTo("API Error")
+            .jsonPath("$.message").value<String> { message -> 
+                assert(message.contains("Error fetching image"))
+                true
+            }
+            .jsonPath("$.path").isEqualTo("/api/breeds/error/image")
+            .jsonPath("$.timestamp").exists()
+    }
+    
+    @Test
+    fun `getAllBreeds returns 500 when generic exception occurs`() {
+        coEvery { service.getAllBreeds() } throws RuntimeException("Database error")
+
+        webTestClient.get()
+            .uri("/api/breeds")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().is5xxServerError
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(500)
+            .jsonPath("$.error").isEqualTo("Internal Server Error")
+            .jsonPath("$.message").isEqualTo("An unexpected error occurred")
+            .jsonPath("$.path").isEqualTo("/api/breeds")
+            .jsonPath("$.timestamp").exists()
     }
 } 

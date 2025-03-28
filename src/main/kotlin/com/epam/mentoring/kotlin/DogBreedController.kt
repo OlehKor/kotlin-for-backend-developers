@@ -59,28 +59,4 @@ class DogBreedController(private val service: DogBreedService) {
         val imageBytes = service.getBreedImage(breed)
         return ResponseEntity.ok().body(imageBytes)
     }
-}
-
-@RestControllerAdvice
-class DogBreedExceptionHandler {
-    
-    @ExceptionHandler(BreedNotFoundException::class)
-    fun handleBreedNotFoundException(ex: BreedNotFoundException): ResponseEntity<ErrorResponse> {
-        val errorResponse = ErrorResponse(
-            timestamp = System.currentTimeMillis(),
-            status = HttpStatus.NOT_FOUND.value(),
-            error = "Not Found",
-            message = ex.message ?: "Breed not found",
-            path = "" // The path will be filled by Spring
-        )
-        return ResponseEntity(errorResponse, HttpStatus.NOT_FOUND)
-    }
-}
-
-data class ErrorResponse(
-    val timestamp: Long,
-    val status: Int,
-    val error: String,
-    val message: String,
-    val path: String
-) 
+} 

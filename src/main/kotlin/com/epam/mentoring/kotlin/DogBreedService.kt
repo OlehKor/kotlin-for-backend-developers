@@ -60,9 +60,12 @@ class DogBreedService(
     suspend fun getBreedSubBreeds(breed: String): List<DogBreed> {
         try {
             logger.info("Fetching sub-breeds for breed: {}", breed)
-            val breedExists = repository.findByBreedAndSubBreedIsNull(breed)
-                ?: repository.findByBreedAndSubBreedIsNotNull(breed).firstOrNull()
-                ?: throw BreedNotFoundException(breed)
+            // Check if the breed exists
+            val breedList = repository.findAllByBreed(breed)
+            if (breedList.isEmpty()) {
+                logger.error("Breed not found: {}", breed)
+                throw BreedNotFoundException(breed)
+            }
             
             val subBreeds = repository.findByBreedAndSubBreedIsNotNull(breed)
             logger.info("Found {} sub-breeds for breed {}", subBreeds.size, breed)
@@ -77,9 +80,15 @@ class DogBreedService(
     suspend fun getBreedImage(breed: String): ByteArray {
         try {
             logger.info("Fetching image for breed: {}", breed)
-            val dogBreed = repository.findByBreedAndSubBreedIsNull(breed)
-                ?: repository.findByBreedAndSubBreedIsNotNull(breed).firstOrNull()
-                ?: throw BreedNotFoundException(breed)
+            // Check if the breed exists
+            val breedList = repository.findAllByBreed(breed)
+            if (breedList.isEmpty()) {
+                logger.error("Breed not found: {}", breed)
+                throw BreedNotFoundException(breed)
+            }
+            
+            // Prefer the main breed entry (without sub-breed) for the image
+            val dogBreed = breedList.find { it.subBreed == null } ?: breedList.first()
             
             if (dogBreed.image != null) {
                 logger.info("Found cached image for breed: {}", breed)
