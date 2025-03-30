@@ -2,15 +2,21 @@ spring:
   cache:
     caffeine:
       spec: expireAfterAccess=600s
-    cache-names: breeds
+    cache-names: breeds,subBreeds,breedsWithoutSubBreeds,breedSubBreeds,breedImages
   sql:
     init:
       mode: always
-  datasource:
-    url: jdbc:h2:./src/test/resources/~;MODE=PostgreSQL
-# Use properties below for setting up r2dbc:
-#  r2dbc:
-#    url: r2dbc:h2:file:///./src/test/resources/~;MODE=PostgreSQL
+      schema-locations: classpath:schema.sql
+  r2dbc:
+    url: r2dbc:h2:mem:///dogdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+
+logging:
+  level:
+    com.epam.mentoring.kotlin: DEBUG
+    org.springframework.r2dbc: DEBUG
+    org.springframework.web: DEBUG
 
 management:
   endpoint:
@@ -21,5 +27,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: [ "prometheus", "metrics"]
+        include: health,metrics,prometheus
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
 
